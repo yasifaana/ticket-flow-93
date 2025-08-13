@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -14,11 +15,21 @@ interface TicketCardProps {
 }
 
 export function TicketCard({ ticket, onClick, className }: TicketCardProps) {
+  const navigate = useNavigate();
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/tickets/${ticket.id}`);
+    }
   };
 
   return (
@@ -27,7 +38,7 @@ export function TicketCard({ ticket, onClick, className }: TicketCardProps) {
         "cursor-pointer hover-lift transition-all duration-200",
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <CardContent className="p-4">
         {/* Header */}
