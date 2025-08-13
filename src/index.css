@@ -2,41 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Ticket Management System Design System - Modern, Professional Interface */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Colors */
+    --background: 250 250% 99%;
+    --foreground: 215 25% 27%;
 
+    /* Surface Colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 27%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 27%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Colors - Modern Blue Scheme */
+    --primary: 217 78% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 78% 65%;
+    --primary-dark: 217 78% 35%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 50% 88%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 48 100% 96%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 100% 97%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Priority Colors */
+    --priority-low: 142 76% 36%;
+    --priority-medium: 38 92% 50%;
+    --priority-high: 0 84% 60%;
+    --priority-critical: 340 82% 52%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Neutral Colors */
+    --secondary: 215 16% 96%;
+    --secondary-foreground: 215 25% 27%;
 
-    --radius: 0.5rem;
+    --muted: 215 16% 94%;
+    --muted-foreground: 215 13% 65%;
+
+    --accent: 215 20% 92%;
+    --accent-foreground: 215 25% 27%;
+
+    /* Border & Input */
+    --border: 215 12% 89%;
+    --input: 215 12% 89%;
+    --ring: 217 78% 51%;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(142 60% 45%));
+    --gradient-subtle: linear-gradient(180deg, hsl(250 250% 99%), hsl(215 20% 98%));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-quick: all 0.15s ease-out;
 
     --sidebar-background: 0 0% 98%;
 
@@ -56,41 +93,77 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Core Colors - Dark Mode */
+    --background: 215 28% 9%;
+    --foreground: 215 20% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    /* Surface Colors */
+    --card: 215 28% 12%;
+    --card-foreground: 215 20% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 215 28% 12%;
+    --popover-foreground: 215 20% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Brand Colors */
+    --primary: 217 78% 65%;
+    --primary-foreground: 215 28% 9%;
+    --primary-light: 217 78% 75%;
+    --primary-dark: 217 78% 45%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Status Colors - Dark Mode */
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 30% 20%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 48 50% 15%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 40% 15%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Priority Colors - Dark Mode */
+    --priority-low: 142 76% 45%;
+    --priority-medium: 38 92% 55%;
+    --priority-high: 0 84% 65%;
+    --priority-critical: 340 82% 60%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Neutral Colors */
+    --secondary: 215 28% 15%;
+    --secondary-foreground: 215 20% 98%;
+
+    --muted: 215 28% 18%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 215 28% 22%;
+    --accent-foreground: 215 20% 98%;
+
+    /* Border & Input */
+    --border: 215 28% 20%;
+    --input: 215 28% 20%;
+    --ring: 217 78% 65%;
+
+    /* Gradients - Dark Mode */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(142 60% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(215 28% 9%), hsl(215 28% 12%));
+
+    /* Shadows - Dark Mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.3);
+
+    /* Sidebar - Dark Mode */
+    --sidebar-background: 215 28% 8%;
+    --sidebar-foreground: 215 20% 98%;
+    --sidebar-primary: 217 78% 65%;
+    --sidebar-primary-foreground: 215 28% 9%;
+    --sidebar-accent: 215 28% 15%;
+    --sidebar-accent-foreground: 215 20% 98%;
+    --sidebar-border: 215 28% 18%;
+    --sidebar-ring: 217 78% 65%;
   }
 }
 
@@ -100,6 +173,99 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* Custom Component Utilities */
+@layer components {
+  /* Status Badge Variants */
+  .status-open {
+    @apply bg-primary/10 text-primary border-primary/20;
+  }
+  
+  .status-in-progress {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+  
+  .status-pending {
+    @apply bg-orange-500/10 text-orange-600 border-orange-500/20;
+  }
+  
+  .status-closed {
+    @apply bg-success/10 text-success border-success/20;
+  }
+
+  /* Priority Badge Variants */
+  .priority-low {
+    @apply bg-success/10 text-success border-success/20;
+  }
+  
+  .priority-medium {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+  
+  .priority-high {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  
+  .priority-critical {
+    @apply bg-red-600/10 text-red-600 border-red-600/20;
+  }
+
+  /* Animation Classes */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
