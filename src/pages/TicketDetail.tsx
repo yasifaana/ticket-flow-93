@@ -8,14 +8,26 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { TicketComments } from "@/components/tickets/ticket-comments";
 import { FileUpload } from "@/components/tickets/file-upload";
-import { tickets } from "@/data/mockData";
+import { useTicket } from "@/hooks/useTickets";
 import { Ticket } from "@/types/ticket";
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  const ticket = tickets.find(t => t.id === id);
+  const { data: ticket, isLoading } = useTicket(id || '');
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading ticket...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!ticket) {
     return (

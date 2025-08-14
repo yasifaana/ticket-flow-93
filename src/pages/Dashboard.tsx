@@ -12,12 +12,35 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { tickets, ticketStats } from "@/data/mockData";
+import { useTickets } from "@/hooks/useTickets";
 
 export default function Dashboard() {
+  const { data: tickets = [], isLoading } = useTickets();
+  
   const openTickets = tickets.filter(t => t.status === 'open');
   const inProgressTickets = tickets.filter(t => t.status === 'in-progress');
   const closedThisWeek = tickets.filter(t => t.status === 'closed').length;
+  
+  const ticketStats = {
+    total: tickets.length,
+    open: openTickets.length,
+    inProgress: inProgressTickets.length,
+    pending: tickets.filter(t => t.status === 'pending').length,
+    closed: tickets.filter(t => t.status === 'closed').length,
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

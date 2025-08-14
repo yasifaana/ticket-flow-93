@@ -16,10 +16,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { tickets } from "@/data/mockData";
+import { useTickets } from "@/hooks/useTickets";
 import { TicketStatus, TicketPriority } from "@/types/ticket";
 
 export default function Tickets() {
+  const { data: tickets = [], isLoading } = useTickets();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
@@ -35,6 +36,19 @@ export default function Tickets() {
 
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading tickets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
