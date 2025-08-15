@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useCreateTicket } from "@/hooks/useTickets";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ interface CreateTicketDialogProps {
 export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const createTicketMutation = useCreateTicket();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -78,12 +80,20 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
     form.setValue("tags", newTags);
   };
 
-  const onSubmit = (data: FormData) => {
-    console.log("Creating ticket:", { ...data, tags });
-    // Here you would typically call an API to create the ticket
-    onOpenChange(false);
-    form.reset();
-    setTags([]);
+  const onSubmit = async (data: FormData) => {
+    try {
+      await createTicketMutation.mutateAsync({
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        assignee_id: data.assigneeId || undefined,
+      });
+      onOpenChange(false);
+      form.reset();
+      setTags([]);
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
 
   return (
@@ -232,7 +242,9 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create Ticket</Button>
+              <Button type="submit" disabled={createTicketMutation.isPending}>
+                {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
+              </Button>
             </div>
           </form>
         </Form>

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Ticket, Comment } from "@/types/ticket";
-import { users } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAddComment } from "@/hooks/useTickets";
 
 interface TicketCommentsProps {
   ticket: Ticket;
@@ -13,7 +14,8 @@ interface TicketCommentsProps {
 
 export function TicketComments({ ticket }: TicketCommentsProps) {
   const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState(ticket.comments);
+  const { user } = useAuth();
+  const addCommentMutation = useAddComment();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -24,18 +26,18 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
     });
   };
 
-  const handleSubmitComment = () => {
-    if (!newComment.trim()) return;
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || !user) return;
 
-    const comment: Comment = {
-      id: `c${Date.now()}`,
-      content: newComment,
-      author: users[0], // Mock current user
-      createdAt: new Date().toISOString()
-    };
-
-    setComments([...comments, comment]);
-    setNewComment("");
+    try {
+      await addCommentMutation.mutateAsync({
+        ticketId: ticket.id,
+        content: newComment,
+      });
+      setNewComment("");
+    } catch (error) {
+      // Error handling is done in the mutation
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -49,7 +51,7 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Comments ({comments.length})
+          Comments ({ticket.comments.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -65,24 +67,24 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
           <div className="flex justify-end">
             <Button 
               onClick={handleSubmitComment}
-              disabled={!newComment.trim()}
+              disabled={!newComment.trim() || addCommentMutation.isPending}
               size="sm"
             >
               <Send className="h-4 w-4 mr-2" />
-              Comment
+              {addCommentMutation.isPending ? "Adding..." : "Comment"}
             </Button>
           </div>
         </div>
 
         {/* Comments List */}
         <div className="space-y-4">
-          {comments.length === 0 ? (
+          {ticket.comments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <p>No comments yet. Be the first to comment!</p>
             </div>
           ) : (
-            comments.map((comment) => (
+            ticket.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3 p-4 rounded-lg bg-muted/50">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={comment.author.avatar} />

@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 import { Ticket, TicketStatus, TicketPriority } from '@/types/ticket';
 
 export interface DatabaseTicket {
@@ -76,9 +78,12 @@ const transformDatabaseTicket = (dbTicket: DatabaseTicket): Ticket => ({
 });
 
 export const useTickets = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['tickets'],
+    queryKey: ['tickets', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -115,13 +120,17 @@ export const useTickets = () => {
 
       return (data as any[]).map(transformDatabaseTicket);
     },
+    enabled: !!user?.id,
   });
 };
 
 export const useTicket = (id: string) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['ticket', id],
     queryFn: async () => {
+      if (!user?.id) return null;
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -159,26 +168,32 @@ export const useTicket = (id: string) => {
 
       return transformDatabaseTicket(data as any);
     },
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 };
 
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (ticket: Omit<Ticket, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => {
+    mutationFn: async (ticketData: {
+      title: string;
+      description: string;
+      priority: TicketPriority;
+      assignee_id?: string;
+    }) => {
+      if (!user?.id) throw new Error('User must be authenticated');
       const { data, error } = await supabase
         .from('tickets')
         .insert([{
-          title: ticket.title,
-          description: ticket.description,
-          status: ticket.status,
-          priority: ticket.priority,
-          assignee_id: ticket.assignee?.id || null,
-          reporter_id: ticket.reporter.id,
-          due_date: ticket.dueDate || null,
-          tags: ticket.tags,
+          title: ticketData.title,
+          description: ticketData.description,
+          status: 'open' as TicketStatus,
+          priority: ticketData.priority,
+          assignee_id: ticketData.assignee_id || null,
+          reporter_id: user.id,
+          tags: [],
         }])
         .select()
         .single();
@@ -191,21 +206,34 @@ export const useCreateTicket = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      toast({
+        title: "Ticket created",
+        description: "Your ticket has been created successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating ticket",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 };
 
 export const useAddComment = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ ticketId, content, authorId }: { ticketId: string; content: string; authorId: string }) => {
+    mutationFn: async ({ ticketId, content }: { ticketId: string; content: string }) => {
+      if (!user?.id) throw new Error('User must be authenticated');
       const { data, error } = await supabase
         .from('comments')
         .insert([{
           ticket_id: ticketId,
           content,
-          author_id: authorId,
+          author_id: user.id,
         }])
         .select()
         .single();
@@ -219,6 +247,17 @@ export const useAddComment = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ticket', variables.ticketId] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error adding comment",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 };
