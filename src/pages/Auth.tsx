@@ -30,9 +30,7 @@ export default function Auth() {
     
     const { error } = await signIn(email, password);
     
-    if (!error) {
-      navigate('/');
-    }
+    // Don't manually navigate - let the useEffect handle it when user state updates
     
     setIsLoading(false);
   };
