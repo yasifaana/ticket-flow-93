@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Ticket, Comment } from "@/types/ticket";
-import { useAuth } from "@/contexts/AuthContext";
 import { useAddComment } from "@/hooks/useTickets";
 
 interface TicketCommentsProps {
@@ -14,7 +13,6 @@ interface TicketCommentsProps {
 
 export function TicketComments({ ticket }: TicketCommentsProps) {
   const [newComment, setNewComment] = useState("");
-  const { user } = useAuth();
   const addCommentMutation = useAddComment();
 
   const formatDate = (dateString: string) => {
@@ -27,7 +25,7 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
   };
 
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim()) return;
 
     try {
       await addCommentMutation.mutateAsync({

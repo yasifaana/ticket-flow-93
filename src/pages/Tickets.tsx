@@ -16,39 +16,51 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTickets } from "@/hooks/useTickets";
+import { tickets } from "@/data/mockData";
 import { TicketStatus, TicketPriority } from "@/types/ticket";
 
 export default function Tickets() {
-  const { data: tickets = [], isLoading } = useTickets();
+  const [ticketData] = useState(tickets);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'all'>('all');
+  const [sortBy, setSortBy] = useState<'created' | 'updated' | 'priority' | 'assignee'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+  const filteredAndSortedTickets = ticketData
+    .filter((ticket) => {
+      const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+      const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+      return matchesSearch && matchesStatus && matchesPriority;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'created':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'updated':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        case 'priority':
+          const priorityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+          comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
+          break;
+        case 'assignee':
+          comparison = (a.assignee?.name || '').localeCompare(b.assignee?.name || '');
+          break;
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading tickets...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -127,10 +139,21 @@ export default function Tickets() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Sort by Created Date</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Updated Date</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Priority</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Assignee</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('created')}>
+                Sort by Created Date {sortBy === 'created' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('updated')}>
+                Sort by Updated Date {sortBy === 'updated' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('priority')}>
+                Sort by Priority {sortBy === 'priority' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('assignee')}>
+                Sort by Assignee {sortBy === 'assignee' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
+                Toggle Sort Order ({sortOrder === 'desc' ? 'Descending' : 'Ascending'})
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -139,7 +162,7 @@ export default function Tickets() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredTickets.length} of {tickets.length} tickets
+          Showing {filteredAndSortedTickets.length} of {ticketData.length} tickets
         </p>
       </div>
 
@@ -149,7 +172,7 @@ export default function Tickets() {
           ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           : "space-y-4"
       }>
-        {filteredTickets.map((ticket) => (
+        {filteredAndSortedTickets.map((ticket) => (
           <TicketCard
             key={ticket.id}
             ticket={ticket}
@@ -163,7 +186,7 @@ export default function Tickets() {
       </div>
 
       {/* Empty State */}
-      {filteredTickets.length === 0 && (
+      {filteredAndSortedTickets.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
             <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />

@@ -1,25 +1,13 @@
-import { Search, Bell, Plus, LogOut } from "lucide-react";
+import { Search, Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   onCreateTicket?: () => void;
 }
 
 export function Header({ onCreateTicket }: HeaderProps) {
-  const { user, signOut } = useAuth();
-
-  const getUserInitials = () => {
-    if (!user?.user_metadata?.first_name && !user?.user_metadata?.last_name) {
-      return user?.email?.slice(0, 2).toUpperCase() || 'U';
-    }
-    const firstName = user?.user_metadata?.first_name || '';
-    const lastName = user?.user_metadata?.last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  };
 
   return (
     <header className="bg-card border-b px-6 py-4">
@@ -56,25 +44,6 @@ export function Header({ onCreateTicket }: HeaderProps) {
               3
             </Badge>
           </Button>
-
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                {getUserInitials()}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem className="flex flex-col items-start">
-                <span className="font-medium">{user?.user_metadata?.first_name} {user?.user_metadata?.last_name}</span>
-                <span className="text-xs text-muted-foreground">{user?.email}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={signOut} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
     </header>
