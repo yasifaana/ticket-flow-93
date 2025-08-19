@@ -12,16 +12,28 @@ interface RecentTicketsProps {
 }
 
 export function RecentTickets({ tickets }: RecentTicketsProps) {
-  const recentTickets = tickets.slice(0, 5);
+  // Mock current user (Alice Johnson)
+  const currentUserId = '1';
+  
+  // Filter tickets: not closed and assigned to current user
+  const yourTickets = tickets.filter(ticket => 
+    ticket.status !== 'closed' && 
+    ticket.assignee?.id === currentUserId
+  );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Tickets</CardTitle>
+        <CardTitle>Your Tickets</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {recentTickets.map((ticket) => (
+          {yourTickets.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No tickets assigned to you</p>
+            </div>
+          ) : (
+            yourTickets.map((ticket) => (
             <div 
               key={ticket.id}
               className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
@@ -63,7 +75,8 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
                 )}
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </CardContent>
     </Card>
