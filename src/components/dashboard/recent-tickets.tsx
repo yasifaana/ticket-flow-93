@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
+import { TicketTypeBadge } from "@/components/ui/ticket-type-badge";
 import { Badge } from "@/components/ui/badge";
 import { Mail } from "lucide-react";
 import { Ticket } from "@/types/ticket";
@@ -75,6 +76,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
                           {ticket.title}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
+                          <TicketTypeBadge type={ticket.type} />
                           <StatusBadge status={ticket.status} />
                           <PriorityBadge priority={ticket.priority} />
                         </div>

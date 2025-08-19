@@ -1,5 +1,6 @@
 export type TicketStatus = 'open' | 'in-progress' | 'pending' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
+export type TicketType = 'bug' | 'task' | 'story' | 'subtask';
 
 export interface User {
   id: string;
@@ -21,6 +22,7 @@ export interface Ticket {
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
+  type: TicketType;
   assignee?: User;
   reporter: User;
   createdAt: string;
