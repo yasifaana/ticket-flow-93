@@ -30,7 +30,7 @@ export function RecentTickets({ tickets }: RecentTicketsProps) {
         <div className="space-y-4">
           {yourTickets.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p>No tickets assigned to you</p>
+              <p>No tickets, enjoy your day! 🌟</p>
             </div>
           ) : (
             yourTickets.map((ticket) => (
