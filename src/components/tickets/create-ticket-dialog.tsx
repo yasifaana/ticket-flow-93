@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useCreateTicket } from "@/hooks/useTickets";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ interface CreateTicketDialogProps {
 export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const createTicketMutation = useCreateTicket();
 
   const createTicketMutation = useCreateTicket();
 
@@ -102,7 +104,6 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
       alert("You must be logged in to create a ticket");
       return;
     }
-
     try {
       await createTicketMutation.mutateAsync({
         title: data.title,
@@ -295,7 +296,9 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create Ticket</Button>
+              <Button type="submit" disabled={createTicketMutation.isPending}>
+                {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
+              </Button>
             </div>
           </form>
         </Form>

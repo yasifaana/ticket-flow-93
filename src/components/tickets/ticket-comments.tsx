@@ -69,14 +69,14 @@ export function TicketComments({ ticketId }: TicketCommentsProps) {
               size="sm"
             >
               <Send className="h-4 w-4 mr-2" />
-              Comment
+              {addCommentMutation.isPending ? "Adding..." : "Comment"}
             </Button>
           </div>
         </div>
 
         {/* Comments List */}
         <div className="space-y-4">
-          {comments.length === 0 ? (
+          {ticket.comments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <p>No comments yet. Be the first to comment!</p>
