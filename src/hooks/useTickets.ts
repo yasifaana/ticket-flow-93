@@ -8,14 +8,6 @@ export const useTickets = () => {
   };
 };
 
-export const useTicket = (id: string) => {
-  const ticket = tickets.find(t => t.id === id);
-  return {
-    data: ticket,
-    isLoading: false,
-  };
-};
-
 export const useCreateTicket = () => {
   return {
     mutate: (data: any) => {

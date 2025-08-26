@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TicketType } from "@/types/ticket";
-import { Bug, CheckSquare, BookOpen, GitBranch } from "lucide-react";
+import { BookOpen, Bug, CheckSquare, GitBranch } from "lucide-react";
 
 interface TicketTypeBadgeProps {
   type: TicketType;

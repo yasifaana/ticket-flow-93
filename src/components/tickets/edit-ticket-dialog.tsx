@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useCreateTicket } from "@/hooks/useTickets";
 import {
   Dialog,
   DialogContent,
@@ -29,16 +28,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { TicketPriority } from "@/types/ticket";
-import { users } from "@/data/mockData";
-import { useCreateTicket, useProfiles } from "@/services/api";
-import { useAuth } from "@/contexts/AuthContext";
+import { ResponseDetailTicket } from "@/types/ticket";
+import { useProfiles, useUpdateTicket } from "@/services/api";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
   description: z.string().min(1, "Description is required"),
-  priority: z.enum(["low", "medium", "high", "critical"]),
   type: z.enum(["task", "bug", "story", "subtask"]),
+  status: z.enum(["open", "in-progress", "pending", "closed"]),
+  priority: z.enum(["low", "medium", "high", "critical"]),
   assigneeId: z.string().optional(),
   dueDate: z.string().optional(),
   tags: z.array(z.string()).default([]),
@@ -46,35 +44,55 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface CreateTicketDialogProps {
+interface EditTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onTicketCreated?: () => void;
+  data: ResponseDetailTicket;
 }
 
-export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
-  const [tags, setTags] = useState<string[]>([]);
+function toDateInputValue(dateIso?: string) {
+  if (!dateIso) return "";
+  const d = new Date(dateIso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+export function EditTicketDialog({ open, onOpenChange, data }: EditTicketDialogProps) {
+  const [tags, setTags] = useState<string[]>(data.ticket.tags ?? []);
   const [tagInput, setTagInput] = useState("");
-  const createTicketMutation = useCreateTicket();
 
-  const createTicketMutation = useCreateTicket();
-
+  const updateTicketMutation = useUpdateTicket();
   const { data: profiles = [], isLoading: profilesLoading } = useProfiles();
-
-  const { user } = useAuth();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      priority: "medium",
-      type: "task",
-      assigneeId: "",
-      dueDate: "",
-      tags: [],
+      title: data.ticket.title,
+      description: data.ticket.description,
+      type: data.ticket.type,
+      status: data.ticket.status,
+      priority: data.ticket.priority,
+      assigneeId: data.ticket.assigneeId || "",
+      dueDate: toDateInputValue(data.ticket.dueDate),
+      tags: data.ticket.tags ?? [],
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        title: data.ticket.title,
+        description: data.ticket.description,
+        type: data.ticket.type,
+        status: data.ticket.status,
+        priority: data.ticket.priority,
+        assigneeId: data.ticket.assigneeId || "",
+        dueDate: toDateInputValue(data.ticket.dueDate),
+        tags: data.ticket.tags ?? [],
+      });
+      setTags(data.ticket.tags ?? []);
+    }
+  }, [open, data, form]);
 
   const addTag = (tag: string) => {
     if (tag && !tags.includes(tag)) {
@@ -91,46 +109,27 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
     form.setValue("tags", newTags);
   };
 
-  // const onSubmit = (data: FormData) => {
-  //   console.log("Creating ticket:", { ...data, tags });
-  //   // Here you would typically call an API to create the ticket
-  //   onOpenChange(false);
-  //   form.reset();
-  //   setTags([]);
-  // };
+  const onSubmit = async (values: FormData) => {
+    await updateTicketMutation.mutateAsync({
+      id: data.ticket.id,
+      title: values.title,
+      description: values.description,
+      type: values.type,
+      status: values.status,
+      priority: values.priority,
+      assigneeId: values.assigneeId || null,
+      dueDate: values.dueDate || null,
+      tags: tags,
+    });
 
-  const onSubmit = async (data: FormData) => {
-    if(!user) {
-      alert("You must be logged in to create a ticket");
-      return;
-    }
-    try {
-      await createTicketMutation.mutateAsync({
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        type: data.type,
-        assigneeId: data.assigneeId || null,
-        dueDate: data.dueDate || null,
-        tags: tags,
-        reporterId: user.id
-      });
-
-      // success: close and reset
-      onOpenChange(false);
-      form.reset();
-      setTags([]);
-    } catch (err) {
-      console.error("Error creating ticket:", err);
-      alert("Failed to create ticket");
-    }
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Ticket</DialogTitle>
+          <DialogTitle>Edit Ticket</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -167,6 +166,7 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
               )}
             />
 
+            <div className="grid grid-cols-2 gap-4">
             <FormField
                 control={form.control}
                 name="type"
@@ -191,7 +191,30 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
                 )}
               />
 
-            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="priority"
@@ -256,7 +279,6 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
               )}
             />
 
-            {/* Tags */}
             <div className="space-y-2">
               <FormLabel>Tags</FormLabel>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -296,9 +318,7 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createTicketMutation.isPending}>
-                {createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
-              </Button>
+              <Button type="submit">Save Changes</Button>
             </div>
           </form>
         </Form>
@@ -306,3 +326,5 @@ export function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogPro
     </Dialog>
   );
 }
+
+

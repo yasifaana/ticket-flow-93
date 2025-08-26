@@ -12,21 +12,24 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { RecentTickets } from "@/components/dashboard/recent-tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useTickets } from "@/hooks/useTickets";
+import { useTickets, useTicketsUser } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
-  const { data: tickets = [], isLoading } = useTickets();
+  const { user } = useAuth();
+  const { data, isLoading, error } = useTicketsUser(user.id);
+  const ticketList = data?.ticket ?? [];
   
-  const openTickets = tickets.filter(t => t.status === 'open');
-  const inProgressTickets = tickets.filter(t => t.status === 'in-progress');
-  const closedThisWeek = tickets.filter(t => t.status === 'closed').length;
+  const openTickets = ticketList.filter(t => t.status === 'open');
+  const inProgressTickets = ticketList.filter(t => t.status === 'in-progress');
+  const closedThisWeek = ticketList.filter(t => t.status === 'closed').length;
   
   const ticketStats = {
-    total: tickets.length,
+    total: ticketList.length,
     open: openTickets.length,
     inProgress: inProgressTickets.length,
-    pending: tickets.filter(t => t.status === 'pending').length,
-    closed: tickets.filter(t => t.status === 'closed').length,
+    pending: ticketList.filter(t => t.status === 'pending').length,
+    closed: ticketList.filter(t => t.status === 'closed').length,
   };
 
   if (isLoading) {
@@ -52,7 +55,7 @@ export default function Dashboard() {
             Welcome back! Here's what's happening with your tickets.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        {/* <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
             <Calendar className="h-4 w-4 mr-2" />
             Last 7 days
@@ -61,7 +64,7 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 mr-2" />
             Export Report
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Stats Grid */}
@@ -70,25 +73,21 @@ export default function Dashboard() {
           title="Total Tickets"
           value={ticketStats.total}
           icon={<TicketIcon className="h-8 w-8" />}
-          change={{ value: 12, type: 'increase' }}
         />
         <StatsCard
           title="Open Tickets"
           value={ticketStats.open}
           icon={<AlertCircle className="h-8 w-8" />}
-          change={{ value: 8, type: 'increase' }}
         />
         <StatsCard
           title="In Progress"
           value={ticketStats.inProgress}
           icon={<Clock className="h-8 w-8" />}
-          change={{ value: 3, type: 'decrease' }}
         />
         <StatsCard
           title="Closed This Week"
           value={closedThisWeek}
           icon={<CheckCircle className="h-8 w-8" />}
-          change={{ value: 15, type: 'increase' }}
         />
       </div>
 
@@ -96,13 +95,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Tickets */}
         <div className="lg:col-span-2">
-          <RecentTickets tickets={tickets} />
+          {(ticketStats.total - ticketStats.closed) === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No tickets, enjoy your day! 🌟</p>
+            </div>
+          ) : (
+            <RecentTickets tickets={data.ticket} currentUser={user} />
+          )}
         </div>
 
         {/* Quick Actions & Activity */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
@@ -120,12 +125,12 @@ export default function Dashboard() {
                 System Status
               </Button>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Team Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Team Activity</CardTitle>
+              <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

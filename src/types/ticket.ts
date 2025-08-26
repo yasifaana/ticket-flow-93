@@ -12,7 +12,7 @@ export interface User {
 export interface Comment {
   id: string;
   content: string;
-  author: User;
+  authorId: string;
   createdAt: string;
 }
 
@@ -31,6 +31,17 @@ export interface Ticket {
   comments: Comment[];
   tags: string[];
   isEmailGenerated?: boolean;
+  sourceEmail?: string;
+  assigneeId?: string;
+  reporterId?: string;
+}
+
+export interface Notification {
+  id: number;
+  userId: string;
+  notifContent: string;
+  read: boolean;
+  createdAt: string;
 }
 
 export interface TicketStats {
@@ -39,4 +50,33 @@ export interface TicketStats {
   inProgress: number;
   pending: number;
   closed: number;
+}
+
+export interface ResponseDetailTicket {
+  ticket: Ticket;
+  assignee: User;
+  reporter: User;
+}
+
+export interface ResponseAllTicketAssignee {
+  ticket: TicketAssignee[];
+}
+
+export interface TicketAssignee {
+  ticket: Ticket;
+  name: string;
+  avatar: string;
+}
+
+export interface ChangePassword {
+  previousPassword: string;
+  newPassword: string;
+}
+
+export interface ResponseTicketByUser {
+  ticket: Ticket[];
+}
+
+export interface ResponseFetchAllNotif {
+  notifications: Notification[];
 }

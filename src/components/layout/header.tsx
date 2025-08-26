@@ -1,29 +1,52 @@
-import { Search, Bell, Plus, Check } from "lucide-react";
+import { Search, Plus, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNotification, useReadNotification } from "@/services/api";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { formatDistanceToNow } from "date-fns";
 
 interface HeaderProps {
   onCreateTicket?: () => void;
 }
 
+export function timeAgo(dateString: string) {
+  const date = new Date(dateString);
+  return formatDistanceToNow(date, { addSuffix: true });
+}
+
 export function Header({ onCreateTicket }: HeaderProps) {
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New ticket assigned to you", time: "2 min ago", read: false },
-    { id: 2, message: "Ticket #TIC-001 has been updated", time: "5 min ago", read: false },
-    { id: 3, message: "Weekly report is ready", time: "1 hour ago", read: false },
-  ]);
+  const { user } = useAuth();
+  const { data, isLoading } = useNotification(user.id);
+  const readNotificationMutation = useReadNotification();
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Get initials from name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+  const notifications = data?.notifications ?? [];
+  const unreadNotif = notifications.filter(notif => notif.read === false);
+  const unreadCount = unreadNotif.length;
+  console.log(notifications);
+  console.log(notifications.map(n => ({ value: n.read, type: typeof n.read })));
+
+
+  const markAsRead = async (isRead: boolean, notifId: number) => {
+    try {
+      readNotificationMutation.mutate({
+        isRead: isRead,
+        notifyId: notifId
+      });
+    } catch (err) {
+      console.error("error read notification: ", err);
+    }
   };
 
   return (
@@ -72,12 +95,12 @@ export function Header({ onCreateTicket }: HeaderProps) {
                 <Badge variant="secondary">{unreadCount} new</Badge>
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {unreadCount === 0 ? (
                   <div className="p-4 text-center text-muted-foreground">
                     No notifications
                   </div>
                 ) : (
-                  notifications.map((notification) => (
+                  unreadNotif.map((notification) => (
                     <div
                       key={notification.id}
                       className={`flex items-start gap-3 p-4 border-b last:border-0 hover:bg-muted/50 ${
@@ -85,14 +108,14 @@ export function Header({ onCreateTicket }: HeaderProps) {
                       }`}
                     >
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                        <p className="text-sm font-medium">{notification.notifContent}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{timeAgo(notification.createdAt)}</p>
                       </div>
                       {!notification.read && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => markAsRead(true, notification.id)}
                           className="h-6 w-6 p-0"
                         >
                           <Check className="h-3 w-3" />
@@ -104,6 +127,15 @@ export function Header({ onCreateTicket }: HeaderProps) {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* User Menu */}
+          {user && (
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                {getInitials(user.name)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

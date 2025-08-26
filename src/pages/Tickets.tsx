@@ -16,51 +16,73 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { tickets } from "@/data/mockData";
 import { TicketStatus, TicketPriority } from "@/types/ticket";
+import { useTickets } from "@/services/api";
+import { useNavigate } from "react-router-dom";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function Tickets() {
-  const [ticketData] = useState(tickets);
+  const { data, isLoading } = useTickets();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'all'>('all');
+  const ticketList = data?.ticket ?? [];
+  const navigate = useNavigate();
+
   const [sortBy, setSortBy] = useState<'created' | 'updated' | 'priority' | 'assignee'>('created');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const filteredAndSortedTickets = ticketData
-    .filter((ticket) => {
-      const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-      const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+  const filteredAndSortedTickets = ticketList.filter((ticket) => {
+    const matchesSearch = ticket.ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || ticket.ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || ticket.ticket.priority === priorityFilter;
 
-      return matchesSearch && matchesStatus && matchesPriority;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
+    return matchesSearch && matchesStatus && matchesPriority;
+  }).sort((a, b) => {
+    let comparison = 0;
       
       switch (sortBy) {
         case 'created':
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          comparison = new Date(a.ticket.createdAt).getTime() - new Date(b.ticket.createdAt).getTime();
           break;
         case 'updated':
-          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          comparison = new Date(a.ticket.updatedAt).getTime() - new Date(b.ticket.updatedAt).getTime();
           break;
         case 'priority':
           const priorityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
-          comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
+          comparison = priorityOrder[a.ticket.priority] - priorityOrder[b.ticket.priority];
           break;
         case 'assignee':
-          comparison = (a.assignee?.name || '').localeCompare(b.assignee?.name || '');
+          comparison = (a.name || '').localeCompare(b.name || '');
           break;
       }
       
       return sortOrder === 'desc' ? -comparison : comparison;
-    });
+  });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 9;
+  const totalPages = Math.ceil(filteredAndSortedTickets.length/ticketsPerPage);
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = startIndex + ticketsPerPage;
+  const recentTickets = filteredAndSortedTickets.slice(startIndex, endIndex);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading tickets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -139,7 +161,7 @@ export default function Tickets() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSortBy('created')}>
+            <DropdownMenuItem onClick={() => setSortBy('created')}>
                 Sort by Created Date {sortBy === 'created' && (sortOrder === 'desc' ? '↓' : '↑')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortBy('updated')}>
@@ -162,7 +184,7 @@ export default function Tickets() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredAndSortedTickets.length} of {ticketData.length} tickets
+          Showing {recentTickets.length} of {ticketList.length} tickets
         </p>
       </div>
 
@@ -172,21 +194,50 @@ export default function Tickets() {
           ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           : "space-y-4"
       }>
-        {filteredAndSortedTickets.map((ticket) => (
+        {recentTickets.map((ticket) => (
           <TicketCard
-            key={ticket.id}
+            key={ticket.ticket.id}
             ticket={ticket}
-            onClick={() => {
-              // Navigate to ticket detail page
-              console.log('Navigate to ticket:', ticket.id);
-            }}
+            onClick={() => navigate(`/tickets/${ticket.ticket.id}`)}
             className={viewMode === 'list' ? 'w-full' : ''}
           />
         ))}
       </div>
 
+      {totalPages > 1 && (
+          <Pagination className="mt-6">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                    
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={page === currentPage}
+                          className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                    
+                <PaginationItem>
+                  <PaginationNext 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+          </Pagination>
+        )}
+
       {/* Empty State */}
-      {filteredAndSortedTickets.length === 0 && (
+      {recentTickets.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
             <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
