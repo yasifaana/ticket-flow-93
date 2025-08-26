@@ -4,16 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Ticket, Comment } from "@/types/ticket";
+import { Ticket, Comment, ResponseDetailTicket } from "@/types/ticket";
 import { users } from "@/data/mockData";
+import { useComment, useProfiles } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TicketCommentsProps {
-  ticket: Ticket;
+  ticketId: string;
 }
 
-export function TicketComments({ ticket }: TicketCommentsProps) {
+export function TicketComments({ ticketId }: TicketCommentsProps) {
   const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState(ticket.comments);
+  const {data: profiles=[]} = useProfiles();
+  const {user} = useAuth();
+  const { comments, isLoading, addComment } = useComment(ticketId, user.id);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -24,17 +28,13 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
     });
   };
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
 
-    const comment: Comment = {
-      id: `c${Date.now()}`,
+    await addComment.mutateAsync({
       content: newComment,
-      author: users[0], // Mock current user
-      createdAt: new Date().toISOString()
-    };
-
-    setComments([...comments, comment]);
+      authorId: user.id,
+    });
     setNewComment("");
   };
 
@@ -49,7 +49,7 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Comments ({comments.length})
+          Comments ({comments.length || 0})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -65,7 +65,7 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
           <div className="flex justify-end">
             <Button 
               onClick={handleSubmitComment}
-              disabled={!newComment.trim()}
+              disabled={!newComment.trim() || addComment.isPending}
               size="sm"
             >
               <Send className="h-4 w-4 mr-2" />
@@ -82,27 +82,38 @@ export function TicketComments({ ticket }: TicketCommentsProps) {
               <p>No comments yet. Be the first to comment!</p>
             </div>
           ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3 p-4 rounded-lg bg-muted/50">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src={comment.author.avatar} />
-                  <AvatarFallback className="text-xs">
-                    {comment.author.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{comment.author.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(comment.createdAt)}
-                    </span>
+            comments.map((comment) => {
+              // pick user data if the comment is from logged-in user
+              const findUser = profiles.find((p) => p.id === comment.authorId)
+              const displayName = findUser ? findUser.name : "unknown user";
+              const displayAvatar = findUser ? findUser.avatar : "";
+              const displayInitial = displayName?.charAt(0) ?? "?";
+
+              return (
+                <div
+                  key={comment.id}
+                  className="flex gap-3 p-4 rounded-lg bg-muted/50"
+                >
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={displayAvatar} />
+                    <AvatarFallback className="text-xs">
+                      {displayInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{displayName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">
-                    {comment.content}
-                  </p>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </CardContent>

@@ -118,51 +118,6 @@ export const useTickets = () => {
   });
 };
 
-export const useTicket = (id: string) => {
-  return useQuery({
-    queryKey: ['ticket', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select(`
-          *,
-          assignee:assignee_id (
-            id,
-            name,
-            email,
-            avatar_url
-          ),
-          reporter:reporter_id (
-            id,
-            name,
-            email,
-            avatar_url
-          ),
-          comments (
-            id,
-            content,
-            created_at,
-            author:author_id (
-              id,
-              name,
-              email,
-              avatar_url
-            )
-          )
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      return transformDatabaseTicket(data as any);
-    },
-    enabled: !!id,
-  });
-};
-
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
 

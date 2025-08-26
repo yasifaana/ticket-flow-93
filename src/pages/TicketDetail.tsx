@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, User, Paperclip, MessageSquare, Clock } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Calendar, User, Paperclip, MessageSquare, Clock, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +9,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { TicketComments } from "@/components/tickets/ticket-comments";
 import { FileUpload } from "@/components/tickets/file-upload";
-import { useTicket } from "@/hooks/useTickets";
 import { Ticket } from "@/types/ticket";
+import { EditTicketDialog } from "@/components/tickets/edit-ticket-dialog";
+import { useComment, useTicketId } from "@/services/api";
+import { TicketTypeBadge } from "@/components/ui/ticket-type-badge";
 
 export default function TicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: ticket, isLoading } = useTicket(id || '');
+  const { data: ticket, isLoading } = useTicketId(id || '');
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const { comments } = useComment(id, "");
 
   if (isLoading) {
     return (
@@ -74,30 +79,40 @@ export default function TicketDetail() {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{ticket.id}</span>
-                    {ticket.isEmailGenerated && (
+                    <span>{ticket.ticket.id}</span>
+                    {ticket.ticket.isEmailGenerated && (
                       <Badge variant="outline" className="text-xs">
                         Email Generated
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-2xl">{ticket.title}</CardTitle>
+                  <CardTitle className="text-2xl">{ticket.ticket.title}</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
-                  <StatusBadge status={ticket.status} />
-                  <PriorityBadge priority={ticket.priority} />
+                  <TicketTypeBadge type={ticket.ticket.type} />
+                  <StatusBadge status={ticket.ticket.status} />
+                  <PriorityBadge priority={ticket.ticket.priority} />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => setIsEditOpen(true)}
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    Edit
+                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                {ticket.description}
+                {ticket.ticket.description}
               </p>
               
               {/* Tags */}
-              {ticket.tags.length > 0 && (
+              {(ticket.ticket.tags ?? []).length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {ticket.tags.map((tag) => (
+                  {(ticket.ticket.tags ?? []).map((tag) => (
                     <Badge key={tag} variant="outline">
                       {tag}
                     </Badge>
@@ -108,10 +123,10 @@ export default function TicketDetail() {
           </Card>
 
           {/* File Upload */}
-          <FileUpload ticketId={ticket.id} />
+          <FileUpload ticketId={ticket.ticket.id} />
 
           {/* Comments */}
-          <TicketComments ticket={ticket} />
+          <TicketComments ticketId={ticket.ticket.id}/>
         </div>
 
         {/* Sidebar */}
@@ -145,22 +160,22 @@ export default function TicketDetail() {
                 <span className="text-sm font-medium text-muted-foreground">Reporter</span>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={ticket.reporter.avatar} />
+                    <AvatarImage /*src={ticket.reporter.avatar}*/ />
                     <AvatarFallback className="text-xs">
-                      {ticket.reporter.name.charAt(0)}
+                      {ticket.ticket.isEmailGenerated ? ticket.ticket.sourceEmail?.charAt(0) : ticket.reporter.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{ticket.reporter.name}</span>
+                  <span className="text-sm">{ticket.ticket.isEmailGenerated ? ticket.ticket.sourceEmail : ticket.reporter.name}</span>
                 </div>
               </div>
 
               {/* Due Date */}
-              {ticket.dueDate && (
+              {ticket.ticket.dueDate && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">Due Date</span>
                   <div className="flex items-center gap-1 text-sm">
                     <Calendar className="h-3 w-3" />
-                    <span>{formatDate(ticket.dueDate)}</span>
+                    <span>{formatDate(ticket.ticket.dueDate)}</span>
                   </div>
                 </div>
               )}
@@ -170,7 +185,7 @@ export default function TicketDetail() {
                 <span className="text-sm font-medium text-muted-foreground">Created</span>
                 <div className="flex items-center gap-1 text-sm">
                   <Clock className="h-3 w-3" />
-                  <span>{formatDate(ticket.createdAt)}</span>
+                  <span>{formatDate(ticket.ticket.createdAt)}</span>
                 </div>
               </div>
 
@@ -179,7 +194,7 @@ export default function TicketDetail() {
                 <span className="text-sm font-medium text-muted-foreground">Updated</span>
                 <div className="flex items-center gap-1 text-sm">
                   <Clock className="h-3 w-3" />
-                  <span>{formatDate(ticket.updatedAt)}</span>
+                  <span>{formatDate(ticket.ticket.updatedAt)}</span>
                 </div>
               </div>
             </CardContent>
@@ -193,7 +208,7 @@ export default function TicketDetail() {
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <span>{ticket.comments.length} comments</span>
+                <span>{comments.length ?? 0} comments</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm">
@@ -203,12 +218,15 @@ export default function TicketDetail() {
 
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>Created by {ticket.reporter.name}</span>
+                <span>Created by {ticket.ticket.isEmailGenerated ? ticket.ticket.sourceEmail : ticket.reporter.name}</span>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      {ticket && (
+        <EditTicketDialog open={isEditOpen} onOpenChange={setIsEditOpen} data={ticket} />
+      )}
     </div>
   );
 }

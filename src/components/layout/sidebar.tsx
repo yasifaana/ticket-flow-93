@@ -7,21 +7,38 @@ import {
   Settings, 
   ChevronLeft,
   ChevronRight,
-  Bug
+  Bug,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Ticket },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
+  // { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  // Get initials from name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <div
@@ -75,7 +92,10 @@ export function Sidebar() {
                     collapsed && "justify-center"
                   )}
                 >
-                  <Icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
+                  <Icon className={cn(
+                    collapsed ? "h-10 w-10" : "h-5 w-5", 
+                    !collapsed && "mr-3"
+                  )} />
                   {!collapsed && item.name}
                 </NavLink>
               </li>
@@ -85,22 +105,30 @@ export function Sidebar() {
       </nav>
 
       {/* User Profile */}
-      {!collapsed && (
+      {!collapsed && user && (
         <div className="p-4 border-t">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                JD
+                {getInitials(user.name)}
               </div>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                John Doe
+                {user.name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                john@company.com
+                {user.email}
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="p-1"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}

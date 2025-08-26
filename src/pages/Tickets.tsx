@@ -16,26 +16,60 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTickets } from "@/hooks/useTickets";
 import { TicketStatus, TicketPriority } from "@/types/ticket";
+import { useTickets } from "@/services/api";
+import { useNavigate } from "react-router-dom";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 export default function Tickets() {
-  const { data: tickets = [], isLoading } = useTickets();
+  const { data, isLoading } = useTickets();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'all'>('all');
+  const ticketList = data?.ticket ?? [];
+  const navigate = useNavigate();
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const [sortBy, setSortBy] = useState<'created' | 'updated' | 'priority' | 'assignee'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const filteredAndSortedTickets = ticketList.filter((ticket) => {
+    const matchesSearch = ticket.ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         ticket.ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    const matchesStatus = statusFilter === 'all' || ticket.ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || ticket.ticket.priority === priorityFilter;
 
     return matchesSearch && matchesStatus && matchesPriority;
+  }).sort((a, b) => {
+    let comparison = 0;
+      
+      switch (sortBy) {
+        case 'created':
+          comparison = new Date(a.ticket.createdAt).getTime() - new Date(b.ticket.createdAt).getTime();
+          break;
+        case 'updated':
+          comparison = new Date(a.ticket.updatedAt).getTime() - new Date(b.ticket.updatedAt).getTime();
+          break;
+        case 'priority':
+          const priorityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+          comparison = priorityOrder[a.ticket.priority] - priorityOrder[b.ticket.priority];
+          break;
+        case 'assignee':
+          comparison = (a.name || '').localeCompare(b.name || '');
+          break;
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 9;
+  const totalPages = Math.ceil(filteredAndSortedTickets.length/ticketsPerPage);
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = startIndex + ticketsPerPage;
+  const recentTickets = filteredAndSortedTickets.slice(startIndex, endIndex);
 
   if (isLoading) {
     return (
@@ -127,10 +161,21 @@ export default function Tickets() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Sort by Created Date</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Updated Date</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Priority</DropdownMenuItem>
-              <DropdownMenuItem>Sort by Assignee</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortBy('created')}>
+                Sort by Created Date {sortBy === 'created' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('updated')}>
+                Sort by Updated Date {sortBy === 'updated' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('priority')}>
+                Sort by Priority {sortBy === 'priority' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('assignee')}>
+                Sort by Assignee {sortBy === 'assignee' && (sortOrder === 'desc' ? '↓' : '↑')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
+                Toggle Sort Order ({sortOrder === 'desc' ? 'Descending' : 'Ascending'})
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -139,7 +184,7 @@ export default function Tickets() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredTickets.length} of {tickets.length} tickets
+          Showing {recentTickets.length} of {ticketList.length} tickets
         </p>
       </div>
 
@@ -149,21 +194,50 @@ export default function Tickets() {
           ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           : "space-y-4"
       }>
-        {filteredTickets.map((ticket) => (
+        {recentTickets.map((ticket) => (
           <TicketCard
-            key={ticket.id}
+            key={ticket.ticket.id}
             ticket={ticket}
-            onClick={() => {
-              // Navigate to ticket detail page
-              console.log('Navigate to ticket:', ticket.id);
-            }}
+            onClick={() => navigate(`/tickets/${ticket.ticket.id}`)}
             className={viewMode === 'list' ? 'w-full' : ''}
           />
         ))}
       </div>
 
+      {totalPages > 1 && (
+          <Pagination className="mt-6">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                    
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={page === currentPage}
+                          className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                    
+                <PaginationItem>
+                  <PaginationNext 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+          </Pagination>
+        )}
+
       {/* Empty State */}
-      {filteredTickets.length === 0 && (
+      {recentTickets.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
             <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
